@@ -69,7 +69,7 @@ function setup() {
 	colorMode(HSB);
 	mode = choosemapmode;
 	iterationsperframe = 1;
-	margin = 0.07; // don't pull data in the extreme edges of the map
+	margin = 0.01; // don't pull data in the extreme edges of the map
 	showMessage("Zoom to selected area, then click here");
 
 }
@@ -86,7 +86,7 @@ function draw() { //main loop called by the P5.js framework every frame
 			showEdges(); //draw connections between nodes
 		}
 		if (mode == solveRESmode) {
-			iterationsperframe = max(0.01, iterationsperframe - 1 * (5 - frameRate())); // dynamically adapt iterations per frame to hit 5fps
+			iterationsperframe = max(0.01, iterationsperframe - 1 * (30 - frameRate())); // dynamically adapt iterations per frame to hit 5fps
 			for (let it = 0; it < iterationsperframe; it++) {
 				iterations++;
 				let solutionfound = false;
