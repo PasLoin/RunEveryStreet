@@ -86,7 +86,7 @@ function draw() { //main loop called by the P5.js framework every frame
 			showEdges(); //draw connections between nodes
 		}
 		if (mode == solveRESmode) {
-			iterationsperframe = max(1, iterationsperframe - 1 * (100000000000 - frameRate())); // dynamically adapt iterations per frame to hit 5fps
+			iterationsperframe = max(1, iterationsperframe - 0 * (100000000000 - frameRate())); // dynamically adapt iterations per frame to hit 5fps
 			for (let it = 0; it < iterationsperframe; it++) {
 				iterations++;
 				let solutionfound = false;
