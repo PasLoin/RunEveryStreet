@@ -508,6 +508,7 @@ function showStatus() {
 			}
 			text("Routes tried: " + iterations, textx, texty + 80);
 			text("Frame rate: " + frameRate(), textx, texty + 100);
+			text("remainingedges: " + remainingedges(), textx, texty + 100);
 			text("Solutions per frame: " + iterationsperframe, textx, texty + 120);
 			text("Iterations/second: " + iterations / (millis() - starttime) * 1000, textx, texty + 140);
 			text("best routes: " + efficiencyhistory.length, textx, texty + 160);
