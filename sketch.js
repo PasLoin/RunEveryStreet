@@ -101,7 +101,7 @@ function draw() { //main loop called by the P5.js framework every frame
 					if (edgewithleasttravels.travels == 1) { // then first time traveled on this edge
 						remainingedges--; //fewer edges that have not been travelled
 					}
-					if (remainingedges == 0) { //once all edges have been traveled, the route is complete. Work out total distance and see if this route is the best so far.
+					if (remainingedges == 1) { //once all edges have been traveled, the route is complete. Work out total distance and see if this route is the best so far.
 						solutionfound = true;
 						currentroute.distance += calcdistance(currentnode.lat, currentnode.lon, startnode.lat, startnode.lon);
 						if (currentroute.distance < bestdistance) { // this latest route is now record
@@ -132,7 +132,7 @@ function draw() { //main loop called by the P5.js framework every frame
 		if (mode == downloadGPXmode){
 			showReportOut();
 		}
-		showStatus();
+		//showStatus();
 	}
 }
 
