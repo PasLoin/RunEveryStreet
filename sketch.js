@@ -132,7 +132,7 @@ function draw() { //main loop called by the P5.js framework every frame
 		if (mode == downloadGPXmode){
 			showReportOut();
 		}
-		//showStatus();
+		showStatus();
 	}
 }
 
