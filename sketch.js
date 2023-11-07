@@ -508,12 +508,12 @@ function showStatus() {
 			}
 			text("Routes tried: " + iterations, textx, texty + 80);
 			text("Frame rate: " + frameRate(), textx, texty + 100);
-			text("remainingedges: " + getNodebyId(), textx, texty + 100);
-			//text("Solutions per frame: " + iterationsperframe, textx, texty + 120);
+			
+			text("Solutions per frame: " + iterationsperframe, textx, texty + 120);
 			text("Iterations/second: " + iterations / (millis() - starttime) * 1000, textx, texty + 140);
 			text("best routes: " + efficiencyhistory.length, textx, texty + 160);
 			text("efficiency gains: " + nf(100 * totalefficiencygains, 0, 2) + "% and " + nf(100 * totalefficiencygains / (millis() - starttime) * 1000, 0, 2) + "% gains/sec:", textx, texty + 180); //
-			text("isTouchScreenDevice: " + isTouchScreenDevice, textx, texty + 200);
+			text("test: " + getNodebyId(), textx, texty + 100);
 		}
 	}
 }
