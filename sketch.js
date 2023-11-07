@@ -101,7 +101,7 @@ function draw() { //main loop called by the P5.js framework every frame
 					if (edgewithleasttravels.travels == 1) { // then first time traveled on this edge
 						remainingedges--; //fewer edges that have not been travelled
 					}
-					if (remainingedges == 1) { //once all edges have been traveled, the route is complete. Work out total distance and see if this route is the best so far.
+					if (remainingedges == 0) { //once all edges have been traveled, the route is complete. Work out total distance and see if this route is the best so far.
 						solutionfound = true;
 						currentroute.distance += calcdistance(currentnode.lat, currentnode.lon, startnode.lat, startnode.lon);
 						if (currentroute.distance < bestdistance) { // this latest route is now record
@@ -511,7 +511,7 @@ function showStatus() {
 			text("Iterations/second: " + iterations / (millis() - starttime) * 1000, textx, texty + 140);
 			text("best routes: " + efficiencyhistory.length, textx, texty + 160);
 			text("efficiency gains: " + nf(100 * totalefficiencygains, 0, 2) + "% and " + nf(100 * totalefficiencygains / (millis() - starttime) * 1000, 0, 2) + "% gains/sec:", textx, texty + 180); //
-			text("isTouchScreenDevice: " + isTouchScreenDevice, textx, texty + 200);		
+			text("isTouchScreenDevice: " + getNodebyId(id), textx, texty + 200);		
 		}
 	}
 }
