@@ -501,7 +501,6 @@ function showStatus() {
 		textAlign(LEFT);
 		text("Total number nodes: " + nodes.length, textx, texty);
 		text("Total number road sections: " + edges.length, textx, texty + 20);
-		text("Length of roads: " + nf(totaledgedistance, 0, 3) + "km", textx, texty + 40);
 		if (bestroute != null) {
 			if (bestroute.waypoints.length > 0) {
 				text("Best route: " + nf(bestroute.distance, 0, 3) + "km, " + nf(100 * totaledgedistance / bestroute.distance, 0, 2) + "%", textx, texty + 60);
@@ -512,7 +511,7 @@ function showStatus() {
 			text("Iterations/second: " + iterations / (millis() - starttime) * 1000, textx, texty + 140);
 			text("best routes: " + efficiencyhistory.length, textx, texty + 160);
 			text("efficiency gains: " + nf(100 * totalefficiencygains, 0, 2) + "% and " + nf(100 * totalefficiencygains / (millis() - starttime) * 1000, 0, 2) + "% gains/sec:", textx, texty + 180); //
-			text("test: " + getNodebyId(), textx, texty + 100);
+			text("isTouchScreenDevice: " + isTouchScreenDevice, textx, texty + 200);		
 		}
 	}
 }
