@@ -511,7 +511,7 @@ function showStatus() {
 			text("Iterations/second: " + iterations / (millis() - starttime) * 1000, textx, texty + 140);
 			text("best routes: " + efficiencyhistory.length, textx, texty + 160);
 			text("efficiency gains: " + nf(100 * totalefficiencygains, 0, 2) + "% and " + nf(100 * totalefficiencygains / (millis() - starttime) * 1000, 0, 2) + "% gains/sec:", textx, texty + 180); //
-			text("isTouchScreenDevice: " + resetEdges(), textx, texty + 200);		
+			text("isTouchScreenDevice: " + showEdges(), textx, texty + 200);		
 		}
 	}
 }
