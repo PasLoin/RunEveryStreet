@@ -100,6 +100,7 @@ function draw() { //main loop called by the P5.js framework every frame
 					currentnode = nextNode;
 					if (edgewithleasttravels.travels == 1) { // then first time traveled on this edge
 						remainingedges--; //fewer edges that have not been travelled
+						console.log("Decrementing remainingedges. edgewithleasttravels.travels =", edgewithleasttravels.travels);
 					}
 					if (remainingedges == 0) { //once all edges have been traveled, the route is complete. Work out total distance and see if this route is the best so far.
 						solutionfound = true;
