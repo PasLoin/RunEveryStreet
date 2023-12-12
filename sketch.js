@@ -74,68 +74,84 @@ function setup() {
 
 }
 
-function draw() { //main loop called by the P5.js framework every frame
-	if (touches.length > 0) {
-		isTouchScreenDevice = true;
-	} // detect touch screen device such as mobile
-	clear();
-	drawMask(); //frame the active area on the map
+function draw() {
+  if (touches.length > 0) {
+    isTouchScreenDevice = true;
+  }
 
-	if (mode != choosemapmode) {
-		if (showRoads) {
-			showEdges(); //draw connections between nodes
-		}
-		if (mode == solveRESmode) {
-                        iterationsperframe = max(90, iterationsperframe - 5 * (90 - frameRate())); // dynamically adapt iterations per frame to hit 5fps			
-			for (let it = 0; it < iterationsperframe; it++) {
-				iterations++;
-				let solutionfound = false;
-				while (!solutionfound) { //run randomly down least roads until all roads have been run
-					shuffle(currentnode.edges, true);
-					currentnode.edges.sort((a, b) => a.travels - b.travels); // sort edges around node by number of times traveled, and travel down least.
-					let edgewithleasttravels = currentnode.edges[0];
-					let nextNode = edgewithleasttravels.OtherNodeofEdge(currentnode);
-					edgewithleasttravels.travels++;
-					currentroute.addWaypoint(nextNode, edgewithleasttravels.distance);
-					currentnode = nextNode;
-					if (edgewithleasttravels.travels == 1) { // then first time traveled on this edge
-						remainingedges--; //fewer edges that have not been travelled
-						console.log("Decrementing remainingedges. edgewithleasttravels.travels =", edgewithleasttravels.travels);
-					}
-					if (remainingedges == 0) { //once all edges have been traveled, the route is complete. Work out total distance and see if this route is the best so far.
-						solutionfound = true;
-						currentroute.distance += calcdistance(currentnode.lat, currentnode.lon, startnode.lat, startnode.lon);
-						if (currentroute.distance < bestdistance) { // this latest route is now record
-							bestroute = new Route(null, currentroute);
-							bestdistance = currentroute.distance;
-							if (efficiencyhistory.length > 1) {
-								totalefficiencygains += totaledgedistance / bestroute.distance - efficiencyhistory[efficiencyhistory.length - 1];
-							}
-							efficiencyhistory.push(totaledgedistance / bestroute.distance);
-							distancehistory.push(bestroute.distance);
+  clear();
+  drawMask();
 
-						}
-						currentnode = startnode;
-						remainingedges = edges.length;
-						currentroute = new Route(currentnode, null);
-						resetEdges();
-					}
-				}
-			}
-		}
-		showNodes();
-		if (bestroute != null) {
-			bestroute.show();
-		}
-		if (mode == solveRESmode) {
-			drawProgressGraph();
-		}
-		if (mode == downloadGPXmode){
-			showReportOut();
-		}
-		showStatus();
-	}
+  if (mode != choosemapmode) {
+    if (showRoads) {
+      showEdges();
+    }
+
+    if (mode == solveRESmode) {
+      iterationsperframe = max(90, iterationsperframe - 5 * (90 - frameRate()));
+
+      for (let it = 0; it < iterationsperframe; it++) {
+        iterations++;
+        let solutionfound = false;
+
+        while (!solutionfound) {
+          shuffle(currentnode.edges, true);
+          currentnode.edges.sort((a, b) => a.travels - b.travels);
+
+          let edgewithleasttravels = currentnode.edges[0];
+          let nextNode = edgewithleasttravels.OtherNodeofEdge(currentnode);
+          edgewithleasttravels.travels++;
+          currentroute.addWaypoint(nextNode, edgewithleasttravels.distance);
+          currentnode = nextNode;
+
+          if (edgewithleasttravels.travels == 1) {
+            remainingedges--;
+            console.log("Decrementing remainingedges. edgewithleasttravels.travels =", edgewithleasttravels.travels);
+          }
+
+          if (remainingedges == 0) {
+            solutionfound = true;
+            currentroute.distance += calcdistance(currentnode.lat, currentnode.lon, startnode.lat, startnode.lon);
+
+            if (currentroute.distance < bestdistance) {
+              bestroute = new Route(null, currentroute);
+              bestdistance = currentroute.distance;
+
+              if (efficiencyhistory.length > 1) {
+                totalefficiencygains += totaledgedistance / bestroute.distance - efficiencyhistory[efficiencyhistory.length - 1];
+              }
+
+              efficiencyhistory.push(totaledgedistance / bestroute.distance);
+              distancehistory.push(bestroute.distance);
+            }
+
+            currentnode = startnode;
+            remainingedges = edges.length;
+            currentroute = new Route(currentnode, null);
+            resetEdges();
+          }
+        }
+      }
+    }
+
+    showNodes();
+
+    if (bestroute != null) {
+      bestroute.show();
+    }
+
+    if (mode == solveRESmode) {
+      drawProgressGraph();
+    }
+
+    if (mode == downloadGPXmode) {
+      showReportOut();
+    }
+
+    showStatus();
+  }
 }
+
 
 function getOverpassData() { //load nodes and edge map data in XML format from OpenStreetMap via the Overpass API
 	showMessage("Loading map data...");
