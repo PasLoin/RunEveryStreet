@@ -103,6 +103,7 @@ function draw() {
           edgewithleasttravels.travels++;
           currentroute.addWaypoint(nextNode, edgewithleasttravels.distance);
           currentnode = nextNode;
+ 	console.log("Incrementing edgewithleasttravels.travels =", edgewithleasttravels.travels);
 
           if (edgewithleasttravels.travels == 1) {
             remainingedges--;
