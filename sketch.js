@@ -93,9 +93,10 @@ function draw() {
       for (let it = 0; it < iterationsperframe; it++) {
         iterations++;
         let solutionfound = false;
-
+	console.log("Remaining Edges at the beginning of the loop: " + remainingedges);
         while (!solutionfound) {
-          shuffle(currentnode.edges, true);
+          console.log("Inside the loop. Remaining Edges: " + remainingedges);
+	  shuffle(currentnode.edges, true);
           currentnode.edges.sort((a, b) => a.travels - b.travels);
 
           let edgewithleasttravels = currentnode.edges[0];
