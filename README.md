@@ -1,4 +1,4 @@
-The live website can be accessed here: https://solipsia.github.io/RunEveryStreet/
+The live website can be accessed here: https://pasloin.github.io/RunEveryStreet/
 # Run Every Street
 
 This is an attempt at solving the [Chinese Postman Problem](https://en.wikipedia.org/wiki/Route_inspection_problem) by calculating the shortest route that covers all possible roads at least once within a selected town. This is a common problem faced by rubbish collectors cleaning every street while using the least amount of fuel, or a postman delivering letters to every house on foot. In my case, I wanted to run down every street in my town in the laziest manner possible.
