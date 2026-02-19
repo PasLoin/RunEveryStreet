@@ -289,7 +289,7 @@ function getOverpassData() { //load nodes and edge map data in XML format from O
 		}
 	}
 
-	let overpassquery = "(" + queryParts.join(";") + ";node(w)(" + bbox + "););out;";
+	let overpassquery = "(" + queryParts.join(";") + ")->.allways;(.allways;node(w.allways););out;";
 	OverpassURL = OverpassURL + encodeURI(overpassquery);
 
 	httpGet(OverpassURL, 'text', false, function (response) {
@@ -609,7 +609,7 @@ function drawProgressGraph() {
 		fill(0, 5, 225, 255);
 		textAlign(LEFT);
 		textSize(12);
-		text("Routes tried: " + (iterations.toLocaleString()) + ", Length of all roads: " + nf(totaledgedistance, 0, 1) + "km, Best route: " + nf(bestroute.distance, 0, 1) + "km (" + round(efficiencyhistory[efficiencyhistory.length - 1] * 100) + "%)", 15, height - graphHeight + 18);
+		let closeness = theoreticalMinDistance / bestroute.distance; let optMsg = "Optimalité estimée: " + nf(closeness * 100, 0, 1) + "%"; if (closeness >= 0.999) optMsg = "OPTIMAL"; text("Essais: " + (iterations.toLocaleString()) + ", Routes: " + nf(totaledgedistance, 0, 1) + "km, Min th.: " + nf(theoreticalMinDistance, 0, 1) + "km, Best: " + nf(bestroute.distance, 0, 1) + "km (" + optMsg + ")", 15, height - graphHeight + 18);
 		textAlign(CENTER);
 		textSize(12);
 		for (let i = 0; i < efficiencyhistory.length; i++) {
@@ -643,14 +643,14 @@ function showReportOut() {
 	text('Total roads covered',width/2,height/2-170+0*95);
 	text('Total length of all roads',width/2,height/2-170+1*95);
 	text('Length of final route',width/2,height/2-170+2*95);
-	text('Efficiency',width/2,height/2-170+3*95);
+	text('Optimalité estimée',width/2,height/2-170+3*95);
 
 	textSize(36);
 	fill(20,255,255,1);
 	text(totaluniqueroads,width/2,height/2-120+0*95);
 	text(nf(totaledgedistance, 0, 1) + "km",width/2,height/2-120+1*95);
 	text(nf(bestroute.distance, 0, 1) + "km",width/2,height/2-120+2*95);
-	text(round(100 * totaledgedistance / bestroute.distance) + "%",width/2,height/2-120+3*95);
+	text(nf(100 * theoreticalMinDistance / bestroute.distance, 0, 1) + "%",width/2,height/2-120+3*95);
 
 	fill(20,255,100,0.75);
 	rect(width/2-140,height/2+200,280,40);
@@ -671,7 +671,7 @@ function showStatus() {
         text("Total number road sections: " + edges.length, textx, texty + 20);
         if (bestroute != null) {
             if (bestroute.waypoints.length > 0) {
-                text("Best route: " + nf(bestroute.distance, 0, 3) + "km, " + nf(100 * totaledgedistance / bestroute.distance, 0, 2) + "%", textx, texty + 60);
+                text("Best route: " + nf(bestroute.distance, 0, 3) + "km, Opt: " + nf(100 * theoreticalMinDistance / bestroute.distance, 0, 2) + "%", textx, texty + 60);
             }
             text("Routes tried: " + iterations, textx, texty + 80);
             text("Frame rate: " + frameRate(), textx, texty + 100);
