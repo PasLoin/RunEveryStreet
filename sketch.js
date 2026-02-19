@@ -23,7 +23,7 @@ var minlat = Infinity,
 	maxlat = -Infinity,
 	minlon = Infinity,
 	maxlon = -Infinity;
-var nodes = [],
+var nodes = [], nodesMap = new Map(),
 	edges = [];
 var mapminlat, mapminlon, mapmaxlat, mapmaxlon;
 var totaledgedistance = 0;
@@ -87,39 +87,70 @@ function draw() {
       showEdges();
     }
 
-    if (mode == solveRESmode) {
-      iterationsperframe = max(90, iterationsperframe - 5 * (90 - frameRate()));
+        if (mode == solveRESmode) {
+      iterationsperframe = max(1, iterationsperframe - 5 * (60 - frameRate())); // Adjusted target frame rate to 60
 
       for (let it = 0; it < iterationsperframe; it++) {
         iterations++;
         let solutionfound = false;
-	console.log("Remaining Edges at the beginning of the loop: " + remainingedges);
         while (!solutionfound) {
-          console.log("Inside the loop. Remaining Edges: " + remainingedges);
-	  shuffle(currentnode.edges, true);
-          currentnode.edges.sort((a, b) => a.travels - b.travels);
-
-          let edgewithleasttravels = currentnode.edges[0];
-          let nextNode = edgewithleasttravels.OtherNodeofEdge(currentnode);
-          edgewithleasttravels.travels++;
-          currentroute.addWaypoint(nextNode, edgewithleasttravels.distance);
-          currentnode = nextNode;
- 	console.log("Incrementing edgewithleasttravels.travels =", edgewithleasttravels.travels);
-
-          if (edgewithleasttravels.travels == 1) {
+          let unvisitedEdges = currentnode.edges.filter(e => e.travels == 0);
+          if (unvisitedEdges.length > 0) {
+            // Pick a random unvisited edge
+            let edge = unvisitedEdges[Math.floor(Math.random() * unvisitedEdges.length)];
+            let nextNode = edge.OtherNodeofEdge(currentnode);
+            edge.travels++;
             remainingedges--;
-            console.log("Decrementing remainingedges. edgewithleasttravels.travels =", edgewithleasttravels.travels);
+            currentroute.addWaypoint(nextNode, edge.distance, 0);
+            currentnode = nextNode;
+          } else {
+            // No unvisited edges here. Find nearest node with unvisited edges.
+            if (remainingedges > 0) {
+              let path = findShortestPath(currentnode, (n) => n.edges.some(e => e.travels == 0));
+              if (path && path.length > 1) {
+                for (let i = 1; i < path.length; i++) {
+                  let from = path[i-1];
+                  let to = path[i];
+                  let edge = findEdgeBetween(from, to);
+                  edge.travels++;
+                  if (edge.travels == 1) remainingedges--;
+                  currentroute.addWaypoint(to, edge.distance, edge.travels > 1 ? 1 : 0);
+                  currentnode = to;
+                }
+              } else {
+                // Fallback: pick any edge if pathfinding fails
+                let edge = currentnode.edges[0];
+                let nextNode = edge.OtherNodeofEdge(currentnode);
+                edge.travels++;
+                if (edge.travels == 1) remainingedges--;
+                currentroute.addWaypoint(nextNode, edge.distance, 1);
+                currentnode = nextNode;
+              }
+            } else {
+              // All edges visited. Return to start following roads.
+              if (currentnode !== startnode) {
+                let path = findShortestPath(currentnode, startnode);
+                if (path && path.length > 1) {
+                  for (let i = 1; i < path.length; i++) {
+                    let from = path[i-1];
+                    let to = path[i];
+                    let edge = findEdgeBetween(from, to);
+                    edge.travels++;
+                    currentroute.addWaypoint(to, edge.distance, 1);
+                    currentnode = to;
+                  }
+                }
+              }
+              solutionfound = true;
+            }
           }
 
-          if (remainingedges == 0) {
-            solutionfound = true;
-            currentroute.distance += calcdistance(currentnode.lat, currentnode.lon, startnode.lat, startnode.lon);
-
+          if (solutionfound) {
             if (currentroute.distance < bestdistance) {
               bestroute = new Route(null, currentroute);
               bestdistance = currentroute.distance;
 
-              if (efficiencyhistory.length > 1) {
+              if (efficiencyhistory.length > 0) {
                 totalefficiencygains += totaledgedistance / bestroute.distance - efficiencyhistory[efficiencyhistory.length - 1];
               }
 
@@ -193,7 +224,7 @@ function getOverpassData() { //load nodes and edge map data in XML format from O
 			minlon = min(minlon, lon);
 			maxlon = max(maxlon, lon);
 		}
-		nodes = [];
+		nodes = []; nodesMap = new Map();
 		edges = [];
 		for (let i = 0; i < numnodes; i++) {
 			var lat = XMLnodes[i].getAttribute('lat');
@@ -201,6 +232,7 @@ function getOverpassData() { //load nodes and edge map data in XML format from O
 			var nodeid = XMLnodes[i].getAttribute('id');
 			let node = new Node(nodeid, lat, lon);
 			nodes.push(node);
+			nodesMap.set(nodeid, node);
 		}
 		//parse ways into edges
 		for (let i = 0; i < numways; i++) {
@@ -270,32 +302,35 @@ function resetEdges() {
 function removeOrphans() { // remove unreachable nodes and edges 
 	resetEdges();
 	currentnode = startnode;
-	floodfill(currentnode, 1); // recursively walk every unwalked route until all connected nodes have been reached at least once, then remove unwalked ones.
+	floodfill(currentnode);
 	let newedges = [];
-	let newnodes = [];
+	let newnodesSet = new Set();
 	totaledgedistance = 0;
 	for (let i = 0; i < edges.length; i++) {
 		if (edges[i].travels > 0) {
 			newedges.push(edges[i]);
 			totaledgedistance += edges[i].distance;
-			if (!newnodes.includes(edges[i].from)) {
-				newnodes.push(edges[i].from);
-			}
-			if (!newnodes.includes(edges[i].to)) {
-				newnodes.push(edges[i].to);
-			}
+			newnodesSet.add(edges[i].from);
+			newnodesSet.add(edges[i].to);
 		}
 	}
 	edges = newedges;
-	nodes = newnodes;
+	nodes = Array.from(newnodesSet);
+	nodesMap = new Map();
+	for (let node of nodes) nodesMap.set(node.nodeId, node);
 	resetEdges();
 }
 
-function floodfill(node, stepssofar) {
-	for (let i = 0; i < node.edges.length; i++) {
-		if (node.edges[i].travels == 0) {
-			node.edges[i].travels = stepssofar;
-			floodfill(node.edges[i].OtherNodeofEdge(node), stepssofar + 1);
+function floodfill(startNode) {
+	let stack = [startNode];
+	while (stack.length > 0) {
+		let node = stack.pop();
+		for (let i = 0; i < node.edges.length; i++) {
+			let edge = node.edges[i];
+			if (edge.travels == 0) {
+				edge.travels = 1;
+				stack.push(edge.OtherNodeofEdge(node));
+			}
 		}
 	}
 }
@@ -378,12 +413,7 @@ function calcdistance(lat1, long1, lat2, long2) {
 }
 
 function getNodebyId(id) {
-	for (let i = 0; i < nodes.length; i++) {
-		if (nodes[i].nodeId == id) {
-			return nodes[i];
-		}
-	}
-	return null;
+	return nodesMap.get(id) || null;
 }
 
 function showMessage(msg) {
