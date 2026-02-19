@@ -67,6 +67,7 @@ function setup() {
 	windowY = mapHeight //; + 250;
 	canvas = createCanvas(windowX, windowY - 34);
 	colorMode(HSB);
+	window.addEventListener('touchstart', function() { isTouchScreenDevice = true; }, {passive: true});
 	mode = choosemapmode;
 	iterationsperframe = 1;
 	margin = 0.01; // don't pull data in the extreme edges of the map
@@ -75,9 +76,7 @@ function setup() {
 }
 
 function draw() {
-  if (touches.length > 0) {
-    isTouchScreenDevice = true;
-  }
+
 
   clear();
   drawMask();
@@ -471,16 +470,20 @@ function trimSelectedEdge() {
 	if (closestedgetomouse >= 0) {
 		let edgetodelete = edges[closestedgetomouse];
 		edges.splice(edges.findIndex((element) => element == edgetodelete), 1);
-		for (let i = 0; i < nodes.length; i++) { // remove references to the deleted edge from within each of the nodes
-			if (nodes[i].edges.includes(edgetodelete)) {
-				nodes[i].edges.splice(nodes[i].edges.findIndex((element) => element == edgetodelete), 1);
+
+		// Remove references to the deleted edge from its connected nodes
+		let nodesToUpdate = [edgetodelete.from, edgetodelete.to];
+		for (let node of nodesToUpdate) {
+			let edgeIndex = node.edges.indexOf(edgetodelete);
+			if (edgeIndex !== -1) {
+				node.edges.splice(edgeIndex, 1);
 			}
 		}
+
 		removeOrphans(); // deletes parts of the network that no longer can be reached.
 		closestedgetomouse = -1;
 	}
 }
-
 function drawProgressGraph() {
 	if (efficiencyhistory.length > 0) {
 		noStroke();
@@ -560,8 +563,18 @@ function showStatus() {
             text("Iterations/second: " + iterations / (millis() - starttime) * 1000, textx, texty + 140);
             text("best routes: " + efficiencyhistory.length, textx, texty + 160);
             text("efficiency gains: " + nf(100 * totalefficiencygains, 0, 2) + "% and " + nf(100 * totalefficiencygains / (millis() - starttime) * 1000, 0, 2) + "% gains/sec:", textx, texty + 180);
-            text("isTouchScreenDevice: " + showEdges(), textx, texty + 200);
+            text("isTouchScreenDevice: " + isTouchScreenDevice, textx, texty + 200);
             text("Remaining Edges: " + remainingedges, textx, texty + 220); // Add this line to display remainingedges
         }
     }
+}
+
+function windowResized() {
+	resizeCanvas(windowWidth, windowHeight - 34);
+	mapWidth = windowWidth;
+	mapHeight = windowHeight;
+	for (let i = 0; i < nodes.length; i++) {
+		nodes[i].x = map(nodes[i].lon, mapminlon, mapmaxlon, 0, mapWidth);
+		nodes[i].y = map(nodes[i].lat, mapminlat, mapmaxlat, mapHeight, 0);
+	}
 }
