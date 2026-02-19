@@ -55,6 +55,14 @@ var totalefficiencygains = 0;
 var isTouchScreenDevice = false;
 var totaluniqueroads;
 
+var includeFootway = false;
+var includePedestrian = true;
+var pedestrianOnlyBicycle = true;
+var includePath = false;
+var includeCycleway = false;
+var filterModalDiv;
+var theoreticalMinDistance = 0;
+
 function setup() {
 	if (navigator.geolocation) { //if browser shares user GPS location, update map to center on it.
 		navigator.geolocation.getCurrentPosition(function (position) {
@@ -185,11 +193,74 @@ function draw() {
 }
 
 
+function showFilterModal() {
+	if (filterModalDiv) return;
+
+	filterModalDiv = createDiv("");
+	filterModalDiv.style("position", "fixed");
+	filterModalDiv.style("top", "50%");
+	filterModalDiv.style("left", "50%");
+	filterModalDiv.style("transform", "translate(-50%, -50%)");
+	filterModalDiv.style("background", "rgba(0, 0, 0, 0.9)");
+	filterModalDiv.style("padding", "20px");
+	filterModalDiv.style("border-radius", "10px");
+	filterModalDiv.style("color", "white");
+	filterModalDiv.style("font-family", "sans-serif");
+	filterModalDiv.style("z-index", "1000");
+	filterModalDiv.style("width", "300px");
+
+	let title = createDiv("Options de filtrage");
+	title.parent(filterModalDiv);
+	title.style("font-size", "20px");
+	title.style("margin-bottom", "15px");
+	title.style("text-align", "center");
+
+	function createOption(label, varName, defaultValue, indent = 0) {
+		let container = createDiv("");
+		container.parent(filterModalDiv);
+		container.style("margin-bottom", "10px");
+		container.style("margin-left", (indent * 20) + "px");
+
+		let cb = createCheckbox(" " + label, defaultValue);
+		cb.parent(container);
+		cb.style("display", "flex");
+		cb.style("align-items", "center");
+		cb.changed(() => {
+			window[varName] = cb.checked();
+		});
+		return cb;
+	}
+
+	createOption("Inclure Footway", "includeFootway", includeFootway);
+	createOption("Inclure Path", "includePath", includePath);
+	createOption("Inclure Cycleway", "includeCycleway", includeCycleway);
+	createOption("Inclure Pedestrian", "includePedestrian", includePedestrian);
+	createOption("Pedestrian: uniquement si vélos", "pedestrianOnlyBicycle", pedestrianOnlyBicycle, 1);
+
+	let btn = createButton("Charger la zone");
+	btn.parent(filterModalDiv);
+	btn.style("width", "100%");
+	btn.style("margin-top", "15px");
+	btn.style("padding", "10px");
+	btn.style("background", "#28a745");
+	btn.style("color", "white");
+	btn.style("border", "none");
+	btn.style("border-radius", "5px");
+	btn.style("cursor", "pointer");
+	btn.mousePressed(() => {
+		filterModalDiv.remove();
+		filterModalDiv = null;
+		getOverpassData();
+	});
+}
+
 function getOverpassData() { //load nodes and edge map data in XML format from OpenStreetMap via the Overpass API
 	showMessage("Loading map data...");
 	canvas.position(0, 34); // start canvas just below logo image
 	bestroute = null;
 	totaluniqueroads=0;
+	totaledgedistance = 0;
+	theoreticalMinDistance = 0;
 	var extent = ol.proj.transformExtent(openlayersmap.getView().calculateExtent(openlayersmap.getSize()), 'EPSG:3857', 'EPSG:4326'); //get the coordinates current view on the map
 	mapminlat = extent[1];
 	mapminlon = extent[0];
@@ -199,14 +270,28 @@ function getOverpassData() { //load nodes and edge map data in XML format from O
 	dataminlon = extent[0] + (extent[2] - extent[0]) * margin;
 	datamaxlat = extent[3] - (extent[3] - extent[1]) * margin;
 	datamaxlon = extent[2] - (extent[2] - extent[0]) * margin;
+
 	let OverpassURL = "https://overpass-api.de/api/interpreter?data=";
-	//let overpassquery = "(way({{bbox}})['name']['highway']['highway' !~ 'path']['highway' !~ 'steps']['highway' !~ 'motorway']['highway' !~ 'motorway_link']['highway' !~ 'raceway']['highway' !~ 'bridleway']['highway' !~ 'proposed']['highway' !~ 'construction']['highway' !~ 'elevator']['highway' !~ 'bus_guideway']['highway' !~ 'footway']['highway' !~ 'cycleway']['highway' !~ 'trunk']['highway' !~ 'platform']['foot' !~ 'no']['service' !~ 'drive-through']['service' !~ 'parking_aisle']['access' !~ 'private']['access' !~ 'no'];node(w)({{bbox}}););out;";
-	//let overpassquery = "(way({{bbox}})['highway']['highway' !~ 'motorway']['highway' !~ 'motorway_link']['highway' !~ 'raceway']['highway' !~ 'proposed']['highway' !~ 'construction']['highway' !~ 'elevator']['highway' !~ 'bus_guideway']['highway' !~ 'trunk']['highway' !~ 'platform']['foot' !~ 'no']['service' !~ 'drive-through']['service' !~ 'parking_aisle']['access' !~ 'private']['access' !~ 'no'];node(w)({{bbox}}););out;";
-	let overpassquery = "(way({{bbox}})['highway']['highway' !~ 'path']['highway' !~ 'primary']['highway' !~ 'steps']['highway' !~ 'motorway']['highway' !~ 'motorway_link']['highway' !~ 'raceway']['highway' !~ 'bridleway']['highway' !~ 'proposed']['highway' !~ 'construction']['highway' !~ 'elevator']['highway' !~ 'bus_guideway']['highway' !~ 'footway']['highway' !~ 'trunk']['highway' !~ 'platform']['foot' !~ 'no']['service' !~ 'drive-through']['service' !~ 'parking_aisle']['access' !~ 'private']['access' !~ 'no'];node(w)({{bbox}}););out;";
-        //let overpassquery = "(way({{bbox}})['highway' = 'cycleway']['highway' = 'residential']['highway' = 'tertiary']['highway' = 'living_street'];node(w)({{bbox}}););out;";
-	overpassquery = overpassquery.replace("{{bbox}}", dataminlat + "," + dataminlon + "," + datamaxlat + "," + datamaxlon);
-	overpassquery = overpassquery.replace("{{bbox}}", dataminlat + "," + dataminlon + "," + datamaxlat + "," + datamaxlon);
+	let bbox = dataminlat + "," + dataminlon + "," + datamaxlat + "," + datamaxlon;
+	let baseFilters = "['highway' !~ 'primary']['highway' !~ 'steps']['highway' !~ 'motorway']['highway' !~ 'motorway_link']['highway' !~ 'raceway']['highway' !~ 'bridleway']['highway' !~ 'proposed']['highway' !~ 'construction']['highway' !~ 'elevator']['highway' !~ 'bus_guideway']['highway' !~ 'trunk']['highway' !~ 'platform']['foot' !~ 'no']['service' !~ 'drive-through']['service' !~ 'parking_aisle']['access' !~ 'private']['access' !~ 'no']";
+
+	let queryParts = [];
+	queryParts.push("way(" + bbox + ")['highway']" + baseFilters + "['highway' !~ 'footway']['highway' !~ 'pedestrian']['highway' !~ 'path']['highway' !~ 'cycleway']");
+
+	if (includeFootway) queryParts.push("way(" + bbox + ")['highway'='footway']" + baseFilters);
+	if (includePath) queryParts.push("way(" + bbox + ")['highway'='path']" + baseFilters);
+	if (includeCycleway) queryParts.push("way(" + bbox + ")['highway'='cycleway']" + baseFilters);
+	if (includePedestrian) {
+		if (pedestrianOnlyBicycle) {
+			queryParts.push("way(" + bbox + ")['highway'='pedestrian']['bicycle'='yes']" + baseFilters);
+		} else {
+			queryParts.push("way(" + bbox + ")['highway'='pedestrian']" + baseFilters);
+		}
+	}
+
+	let overpassquery = "(" + queryParts.join(";") + ";node(w)(" + bbox + "););out;";
 	OverpassURL = OverpassURL + encodeURI(overpassquery);
+
 	httpGet(OverpassURL, 'text', false, function (response) {
 		let OverpassResponse = response;
 		var parser = new DOMParser();
@@ -334,8 +419,39 @@ function floodfill(startNode) {
 	}
 }
 
+function calculateTheoreticalMin() {
+	let oddNodes = nodes.filter(n => n.edges.length % 2 !== 0);
+	if (oddNodes.length === 0) {
+		theoreticalMinDistance = totaledgedistance;
+		return;
+	}
+
+	let addedDistance = 0;
+	let unmatchedSet = new Set(oddNodes);
+
+	while (unmatchedSet.size > 1) {
+		let u = unmatchedSet.values().next().value;
+		unmatchedSet.delete(u);
+
+		let path = findShortestPath(u, (n) => n !== u && unmatchedSet.has(n));
+
+		if (path) {
+			let d = 0;
+			for (let i = 0; i < path.length - 1; i++) {
+				d += findEdgeBetween(path[i], path[i+1]).distance;
+			}
+			addedDistance += d;
+			let v = path[path.length - 1];
+			unmatchedSet.delete(v);
+		}
+	}
+
+	theoreticalMinDistance = totaledgedistance + addedDistance;
+}
+
 function solveRES() {
 	removeOrphans();
+	calculateTheoreticalMin();
 	showRoads = false;
 	remainingedges = edges.length;
 	currentroute = new Route(currentnode, null);
@@ -348,7 +464,7 @@ function solveRES() {
 
 function mousePressed() { // clicked on map to select a node
 	if (mode == choosemapmode && mouseY < btnBRy && mouseY > btnTLy && mouseX > btnTLx && mouseX < btnBRx) { // Was in Choose map mode and clicked on button
-		getOverpassData();
+		showFilterModal();
 		return;
 	}
 	if (mode == selectnodemode && mouseY < mapHeight) { // Select node mode, and clicked on map 
