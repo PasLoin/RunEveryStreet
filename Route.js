@@ -23,7 +23,7 @@ class Route {
         }
     }
 
-    addWaypoint(node, dist, doublingsup) {
+    addWaypoint(node, dist, doublingsup = 0) {
         this.waypoints.push(node);
         this.distance += dist;
         this.minlat = min(this.minlat, node.lat);
@@ -62,7 +62,7 @@ class Route {
             ellipse(this.waypoints[0].x, this.waypoints[0].y, 20, 20); //show the first waypoint
         }
         fill(149, 255, 255, 0.8);
-        ellipse(this.waypoints[bestroute.waypoints.length - 1].x, this.waypoints[bestroute.waypoints.length - 1].y, 20, 20); //show the last waypoint
+        ellipse(this.waypoints[this.waypoints.length - 1].x, this.waypoints[this.waypoints.length - 1].y, 20, 20); //show the last waypoint
     }
 
     exportGPX() {
